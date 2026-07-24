@@ -1,0 +1,42 @@
+# === 隱私 / 機密（務必排除，勿進版控）===
+# 交接文件屬私人工作文件（含個人資訊、內部路徑），不公開
+_交接_給新對話.md
+# API key / 環境變數
+.env
+.env.*
+*.key
+secrets/
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+# 虛擬環境
+venv/
+.venv/
+env/
+
+# === 模型 / 訓練產物 ===
+*.pt
+*.pth
+*.onnx
+checkpoints/
+runs/
+wandb/
+mlruns/
+tensorboard/
+
+# === 資料 / 日誌 / 校準量測 ===
+data/
+logs/
+*.log
+calibration/measurements/
+
+# === OS / IDE ===
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
