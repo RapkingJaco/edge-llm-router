@@ -2,7 +2,9 @@
 
 > **RL 智慧 LLM 推論分流器** — 一個 PPO agent 逐請求決定把 LLM 推論送到 **本機 / 邊緣 / 雲** 哪裡跑，即時最佳化「首字延遲（TTFT）+ 成本」；使用者用**一句中文**改優化目標，行為**零重訓**當場切換。
 
-LLM serving / inference-routing 方向的互動作品集。線上 demo 是三面板即時儀表板：左＝即時分流、中＝AI vs 傳統賽跑、右＝中文方針框。
+LLM serving / inference-routing 方向的互動作品集。三面板即時儀表板：左＝即時分流、中＝AI vs 傳統賽跑、右＝中文方針框。
+
+**🔗 線上 demo**：https://edge-llm-router-735815297154.asia-east1.run.app （GCP Cloud Run，閒置自動縮到零）
 
 ---
 

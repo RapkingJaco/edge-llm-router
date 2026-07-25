@@ -1,0 +1,33 @@
+# 上傳到 Cloud Build 前排除的東西（有此檔時 gcloud 不會再讀 .gitignore，所以要列全）。
+# 注意：故意「不」排除 checkpoints/ → 讓 ppo_wc.pt 進 image，雲端 demo 有真 PPO。
+
+# 機密（務必排除！）
+.env
+.env.*
+_交接_繼續開發.md
+
+# 版控 / 開發
+.git
+.github
+.claude
+docs
+tests
+
+# 虛擬環境 / 快取
+.venv
+**/__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+
+# 前端（image 內用 web/src 重建）
+web/node_modules
+web/dist
+
+# 訓練 / 評估產物（checkpoints 保留！）
+mlruns
+mlflow.db
+outputs
+runs
+wandb
+calibration/measurements

@@ -88,8 +88,13 @@ docker build -t edge-llm-router .
 docker run --rm -p 8080:8000 edge-llm-router   # 開 http://localhost:8080
 ```
 
-- GCP 部署（deploy.yml / Cloud Run）此輪未做（使用者選「只到本機 build」）——image 已就緒，
-  之後有 gcloud 帳號 push 上 Cloud Run 即可。
+**GCP Cloud Run 部署 ✅**
+- `.gcloudignore`：上傳 Cloud Build 前排除 `.env`/`.venv`/`node_modules` 等，**保留 checkpoints**
+  （雲端有真 PPO 模型）。
+- `gcloud run deploy edge-llm-router --source . --region asia-east1 --allow-unauthenticated
+  --port 8000 --memory 2Gi --timeout 3600` → 一鍵 build+deploy。
+- 線上：**https://edge-llm-router-735815297154.asia-east1.run.app**（`/health` ai_loaded=true、
+  WebSocket 即時儀表板實測可用、AI 領先 ~27%）。閒置縮到零、無 GPU/key 也照跑。
 
 ---
 

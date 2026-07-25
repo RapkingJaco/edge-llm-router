@@ -294,8 +294,8 @@ TTFT ≈ 排隊等待 + 網路RTT + prefill;  prefill_ms ≈ prefill_ms_per_toke
 - **P6-2** ✅ `calibration.py` 量真→擬合→gap；實測 gap 2185ms→61ms（縮小 97%），出圖
 - **P6-3** ✅ `GeminiBackend` 可插拔 + **真呼叫已驗證**（放 key 後真打量到 ~3300ms；
   型號用 `gemini-flash-latest`；沒 key 自動 fallback）
-- **P6-4** ✅ Dockerfile 多階段 build 成功；container 跑起來 `/health` ai_loaded、瀏覽器 WS
-  即時連線（8080）；self-contained 可無 GPU/無 key 部署（GCP push 待帳號）
+- **P6-4** ✅ Dockerfile 多階段 build；**已上 GCP Cloud Run**（asia-east1，公開網址、WS 即時
+  連線實測可用、閒置縮到零）：https://edge-llm-router-735815297154.asia-east1.run.app
 
 **DoD**：
 - [x] 真打 Ollama 拿到真 TTFT；停掉 Ollama 自動 fallback 不崩
