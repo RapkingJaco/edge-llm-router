@@ -1,0 +1,63 @@
+# edge-llm-router 設定檔
+# 📌 這裡的數字是「有物理意義的合理起始值」，Phase 6 會用真實量測校準。
+# 校準只改這個檔，程式不動。
+
+seed: 42
+
+# ── 三節點模型（TTFT ≈ 排隊等待 + RTT + prefill）──────────────────────
+# 成本一律「自己標價」：雲端假裝很貴（≈本機 100×），逼 RL 別全丟雲。
+nodes:
+  local:            # 弱手機：便宜但一擠就慢、容量低
+    rtt_ms: 2.0
+    prefill_ms_per_token: 6.0
+    decode_ms_per_token: 25.0
+    capacity: 2
+    cost_per_request: 0.0001
+  edge:             # 4070 桌機（Phase 6 真跑 Ollama）
+    rtt_ms: 8.0
+    prefill_ms_per_token: 1.5
+    decode_ms_per_token: 8.0
+    capacity: 4
+    cost_per_request: 0.0010
+  cloud:            # Gemini：強、穩、貴
+    rtt_ms: 120.0
+    prefill_ms_per_token: 0.4
+    decode_ms_per_token: 3.0
+    capacity: 16
+    cost_per_request: 0.0100
+
+# ── Reward：r = -(w_lat·normTTFT + w_cost·normCost) - 逾時懲罰 ──────────
+reward:
+  ttft_baseline_ms: 2000.0    # 可接受上限（SLA），正規化基準
+  cost_baseline: 0.0100       # 全用雲端每請求花費（最貴情況）
+  timeout_penalty: 2.0        # 逾時/塞爆丟棄的大扣分
+
+# ── 模擬節點行為 ────────────────────────────────────────────────────
+sim:
+  drop_wait_ms: 4000.0        # 排隊等待超過此值即丟棄（塞爆）；≈ 2× SLA
+
+# ── 工作負載 ────────────────────────────────────────────────────────
+workload:
+  arrival_rate_base: 5.0      # 平均每秒請求數（會加尖峰變動）
+  episode_seconds: 60.0
+  tokens:
+    input:  {min: 16, max: 512}
+    output: {min: 16, max: 512}
+  token_est_noise: 0.20         # 輸出長度估計的相對雜訊（agent 只拿得到估計值）
+  peak_amplitude: 3.0           # 尖峰時到達率放大倍數（中段高斯突波）
+
+# ── Domain Randomization（Phase 6 開）──────────────────────────────
+domain_randomization:
+  enabled: false
+  prefill_jitter: 0.30        # ±30%
+  rtt_jitter_ms: 20.0
+  capacity_jitter: 1
+
+# ── PPO 訓練超參（Phase 3 填細）────────────────────────────────────
+ppo:
+  total_timesteps: 500000
+  learning_rate: 0.0003
+  num_steps: 2048
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_coef: 0.2

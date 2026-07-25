@@ -1,0 +1,27 @@
+# 虛擬環境 / 快取
+.venv
+**/__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+
+# 前端（image 內重建）
+web/node_modules
+web/dist
+
+# 訓練 / 評估產物（模型 checkpoints 需保留，故不排除）
+mlruns
+mlflow.db
+outputs
+runs
+wandb
+calibration/measurements
+
+# 版控 / 開發 / 隱私
+.git
+.github
+.claude
+docs
+tests
+.env
+_交接_繼續開發.md

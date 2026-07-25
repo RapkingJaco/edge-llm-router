@@ -4,6 +4,7 @@ _交接_給新對話.md
 # API key / 環境變數
 .env
 .env.*
+!.env.example
 *.key
 secrets/
 
@@ -27,6 +28,7 @@ checkpoints/
 runs/
 wandb/
 mlruns/
+mlflow.db
 tensorboard/
 
 # === 資料 / 日誌 / 校準量測 ===
@@ -34,6 +36,14 @@ data/
 logs/
 *.log
 calibration/measurements/
+
+# === 前端（Vite/React/TS）===
+node_modules/
+dist/
+.vite/
+
+# === eval 產物 ===
+outputs/
 
 # === OS / IDE ===
 .DS_Store
