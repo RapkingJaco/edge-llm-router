@@ -12,6 +12,9 @@ from typing import Any
 from ..agent.baselines import GreedyPolicy
 from ..agent.policy import Policy
 from ..agent.ppo import PPOPolicy, load_agent
+from ..backends.base import NodeBackend, Request
+from ..backends.gemini_backend import build_cloud_backend
+from ..backends.ollama_backend import build_edge_backend
 from ..config import load_config
 from ..control.base import ControlLLM
 from ..control.rule_based import RuleBasedControl
@@ -48,6 +51,9 @@ class LiveSimulation:
         self.base_policy = base_policy if base_policy is not None else GreedyPolicy()
         self.control = control if control is not None else RuleBasedControl()
         self._note = ""
+        # 抽驗：真實後端（lazy build，第一次抽驗才探測）+ 最近一次實測結果
+        self._real: dict[str, NodeBackend] = {}
+        self._last_sample: dict[str, Any] | None = None
         self._peak_factor = peak_factor
         self._peak = False
         self._seed = seed
@@ -73,6 +79,27 @@ class LiveSimulation:
         self.base_env.set_w(*result.w)  # 基準線無視 w，套了也不影響
         self._note = result.note
         return result.note
+
+    def _real_backend(self, node_name: str) -> NodeBackend:
+        """lazy 建真實後端：edge→Ollama、cloud→Gemini(降級鏈)；建一次快取。"""
+        if node_name not in self._real:
+            builder = build_edge_backend if node_name == "edge" else build_cloud_backend
+            self._real[node_name] = builder(self._base_config)
+        return self._real[node_name]
+
+    def real_sample(self, node_name: str = "edge") -> dict[str, Any]:
+        """對真實後端抽打一次、量真實 TTFT（會阻塞數秒，應在背景執行緒跑）。"""
+        backend = self._real_backend(node_name)
+        res = backend.infer(Request(input_tokens=64, output_tokens=16))
+        self._last_sample = {
+            "node": node_name,
+            "ttft_ms": round(res.ttft_ms, 0),
+            "is_measured": res.is_measured,  # True = 真打；False = 該節點退回模擬
+            "dropped": res.dropped,
+            "backend": type(backend).__name__,
+            "t": self._t,
+        }
+        return self._last_sample
 
     def tick(self) -> dict[str, Any]:
         if self._done:
@@ -140,6 +167,7 @@ class LiveSimulation:
             "w": [round(self.w[0], 2), round(self.w[1], 2)],
             "peak": self._peak,
             "note": self._note,
+            "measured": self._last_sample,
             "episode_over": self._done,
             "ai_loaded": self.ai_loaded,
             "lead_pct": round(lead, 1),

@@ -53,6 +53,15 @@ export function RoutingDashboard({ snapshot }: { snapshot: Snapshot | null }) {
           <div><span>平均 TTFT</span><b>{Math.round(snapshot.ai.avg_ttft_ms)}ms</b></div>
         </div>
       )}
+      {snapshot?.measured && (
+        <div className={`sample ${snapshot.measured.is_measured ? "real" : ""}`}>
+          {snapshot.measured.is_measured ? "✅ 實測" : "抽驗"}
+          <span className="sample-node"> {snapshot.measured.node}</span>
+          {snapshot.measured.is_measured
+            ? <> · 真打後端 <b>{Math.round(snapshot.measured.ttft_ms)}ms</b></>
+            : <> · 該節點退回模擬</>}
+        </div>
+      )}
     </section>
   );
 }

@@ -15,11 +15,21 @@ export interface LaneView {
 
 export type Utils = Record<NodeName, number>;
 
+export interface Measured {
+  node: NodeName;
+  ttft_ms: number;
+  is_measured: boolean;
+  dropped: boolean;
+  backend: string;
+  t: number;
+}
+
 export interface Snapshot {
   t: number;
   w: [number, number];
   peak: boolean;
   note: string;
+  measured: Measured | null;
   episode_over: boolean;
   ai_loaded: boolean;
   lead_pct: number;

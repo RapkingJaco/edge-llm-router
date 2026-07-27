@@ -23,6 +23,7 @@ from .simulation import LiveSimulation
 load_dotenv()  # 讀 .env（若有 GEMINI_API_KEY 供之後真雲端/抽驗用）
 
 TICK_INTERVAL = 0.06  # 秒/步（≈16 步/秒，看得清又不太慢）
+SAMPLE_EVERY = 160  # 每 ~10 秒背景抽驗一次真實後端（不阻塞模擬迴圈）
 _WEB_DIST = Path(__file__).resolve().parents[3] / "web" / "dist"
 
 app = FastAPI(title="edge-llm-router")
@@ -60,6 +61,8 @@ def _handle_command(sim: LiveSimulation, msg: dict[str, Any]) -> None:
 async def ws(websocket: WebSocket) -> None:
     await websocket.accept()
     sim = LiveSimulation()
+    tick = 0
+    sample_task: asyncio.Task | None = None
     try:
         while True:
             try:
@@ -67,6 +70,13 @@ async def ws(websocket: WebSocket) -> None:
                 _handle_command(sim, msg)
             except TimeoutError:
                 pass
+
+            tick += 1
+            # 每 SAMPLE_EVERY 步，在背景執行緒真打一次後端（edge/cloud 輪流），不阻塞迴圈
+            if tick % SAMPLE_EVERY == 0 and (sample_task is None or sample_task.done()):
+                node = "edge" if (tick // SAMPLE_EVERY) % 2 == 0 else "cloud"
+                sample_task = asyncio.create_task(asyncio.to_thread(sim.real_sample, node))
+
             await websocket.send_json(sim.tick())
     except WebSocketDisconnect:
         return

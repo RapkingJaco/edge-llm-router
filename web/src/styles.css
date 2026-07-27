@@ -66,6 +66,12 @@ body {
 .stats b { font-size: 18px; font-variant-numeric: tabular-nums; }
 .stats .warn { color: var(--danger); }
 
+.sample { margin-top: 14px; padding: 9px 12px; border-radius: 8px; font-size: 13px;
+  background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+.sample.real { color: var(--local); border-color: var(--local); }
+.sample .sample-node { color: var(--text); font-weight: 500; }
+.sample b { color: inherit; }
+
 /* 情境按鈕 */
 .controls { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
 .controls-label { color: var(--muted); font-size: 14px; }

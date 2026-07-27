@@ -55,6 +55,15 @@ def test_set_policy_changes_w_live() -> None:
     assert snap["note"]  # 有解讀字串
 
 
+def test_real_sample_populates_measured() -> None:
+    # 抽驗：edge 有 Ollama 就真打(is_measured=True)，沒有就退模擬——都要能填進快照。
+    sim = LiveSimulation()
+    result = sim.real_sample("edge")
+    assert result["node"] == "edge"
+    assert {"ttft_ms", "is_measured", "backend"} <= set(result)
+    assert sim.tick()["measured"] is not None
+
+
 def test_health_endpoint() -> None:
     client = TestClient(app)
     r = client.get("/health")
