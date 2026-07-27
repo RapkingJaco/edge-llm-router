@@ -58,19 +58,9 @@ LLM serving / inference-routing 方向的互動作品集。三面板即時儀表
 
 ## 系統架構
 
-```
-web/(React 三面板) ──WS──► server/(FastAPI) ──► control/(中文方針→權重)
-                              │        │
-                              ▼        ▼
-                           agent/    sim/(Gymnasium 環境)
-                          (PPO/基準線)   │
-                              └──────────┴──► backends/(節點後端介面)
-                                              ├ SimulatedBackend（排隊模型）
-                                              ├ OllamaBackend（4070 邊緣真跑）
-                                              └ GeminiBackend（雲端，可插拔＋降級）
-```
+![系統架構圖](docs/img/architecture.png)
 
-各模組邊界乾淨：`sim` 不知後端真假、`server` 不碰 PPO 內部、`web` 只跟 `server` 講話。真實後端有**優雅降級**：Gemini 額度沒了 → 本機 Ollama → 模擬，永不中斷。
+四層六模組，邊界乾淨：`sim` 不知後端真假、`server` 不碰 PPO 內部、`web` 只跟 `server` 講話。真實後端有**優雅降級**：Gemini 額度沒了 → 本機 Ollama → 模擬，永不中斷。完整逐塊說明與資料流見 **[docs/architecture.md](docs/architecture.md)**。
 
 ---
 
