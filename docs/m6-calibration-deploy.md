@@ -98,8 +98,30 @@ docker run --rm -p 8080:8000 edge-llm-router   # 開 http://localhost:8080
 
 ---
 
+## 即時抽驗（線上真打真實後端）✅
+
+把「線上少量請求真打、標✅實測」做進**運行中的系統**（不再只有離線腳本）：
+
+- `LiveSimulation.real_sample(node)`：對真實後端抽打一次量真 TTFT。真實後端 lazy build
+  （第一次抽驗才探測）：edge → `build_edge_backend`（Ollama）、cloud → `build_cloud_backend`
+  （Gemini→Ollama→模擬 降級鏈）。
+- `server/app.py`：WS 迴圈每 `SAMPLE_EVERY`(~10s) 用 **`asyncio.to_thread`** 在**背景執行緒**
+  抽驗（edge/cloud 輪流），**不阻塞**高速模擬主迴圈（真生成要數秒）。
+- 快照多帶 `measured`；前端 `RoutingDashboard` 顯示「**✅ 實測 · 真打後端 <node> <ttft>ms**」
+  徽章（`is_measured=False` 時標「退回模擬」）。
+
+**實測（本機 Ollama 在線）**：edge 抽驗 → 真打 4070 Ollama ✅ ~2.6s；cloud 抽驗 → Gemini
+額度沒了 → 降級鏈自動退 Ollama → 仍 ✅實測 ~2.5s。**線上（GCP 無 GPU/Ollama/key）則誠實
+標「退回模擬」**——同一套機制、優雅降級。
+
+**設計要點**：真打慢，所以只在**背景**抽驗、且真後端不進 RL 的 obs/訓練路徑（避免拖慢、也
+避免洩上帝視角）；主迴圈仍是校準過的模擬，抽驗只是「摸一下真實、秀給觀眾看」。
+
+---
+
 ## Phase 6 總結
 
 sim-to-real 全數到位：邊緣真跑 Ollama（P6-1）、校準把 gap 壓低 97%（P6-2）、Gemini 可插拔
-（P6-3）、整包 Docker 化可部署（P6-4）。作品集第三賣點「Sim-to-Real 校準」有了硬證據，
-且產出一個能一鍵跑的容器。剩 Phase 7 進階圖表（Pareto / gap 迭代 / LSTM）為加分項。
+（P6-3）、整包 Docker 化 + **上 GCP Cloud Run**（P6-4）、**即時抽驗真實後端進運行系統**。
+作品集第三賣點「Sim-to-Real 校準」有了硬證據，且產出一個線上可玩的公開 demo。
+剩 Phase 7 進階圖表為加分項。
