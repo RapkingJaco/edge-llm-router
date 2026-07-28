@@ -22,7 +22,7 @@ from ..backends.base import Request
 from ..backends.simulated import build_nodes, build_nodes_randomized
 from ..config import load_config
 from ..metrics import scalarize_reward
-from .workload import Arrival, generate_episode
+from .workload import Arrival, generate_episode, generate_n
 
 NODE_ORDER = ("local", "edge", "cloud")
 OBS_DIM = 15
@@ -56,6 +56,7 @@ class RouterEnv(gym.Env):
         self.nodes = build_nodes(self.config)
         self._dr_enabled = bool(self.config.get("domain_randomization", {}).get("enabled", False))
         self._fixed_w = fixed_w
+        self._n_requests: int | None = None  # None=時長制 episode；設了=剛好跑這麼多筆
 
         reward_cfg = self.config["reward"]
         self.ttft_baseline = float(reward_cfg["ttft_baseline_ms"])
@@ -91,7 +92,10 @@ class RouterEnv(gym.Env):
             for node in self.nodes.values():
                 node.reset()
         self._w = self._sample_w()
-        self._arrivals = generate_episode(self.np_random, self.config)
+        if self._n_requests is not None:
+            self._arrivals = generate_n(self.np_random, self.config, self._n_requests)
+        else:
+            self._arrivals = generate_episode(self.np_random, self.config)
         self._i = 0
         self._last_now = 0.0
         self._cum_cost = 0.0
@@ -188,6 +192,10 @@ class RouterEnv(gym.Env):
         """即時更新偏好權重（含當前 episode）。obs 下一步就反映新 w → PPO 零重訓改行為。"""
         self._fixed_w = (w_lat, w_cost)
         self._w = (w_lat, w_cost)
+
+    def set_n_requests(self, n: int | None) -> None:
+        """設定「跑固定筆數」；None 恢復時長制 episode。下次 reset 生效。"""
+        self._n_requests = n
 
     def peek_utilizations(self) -> dict[str, float]:
         """三節點在最近處理時點的使用率（給即時儀表板用；不影響訓練成本）。"""

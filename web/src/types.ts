@@ -1,10 +1,11 @@
 // 對應 server/simulation.py 的快照格式。
 
 export type NodeName = "local" | "edge" | "cloud";
+export type Mode = "idle" | "running" | "finished";
 
 export interface LaneView {
   name: string;
-  node: NodeName;
+  node: NodeName | null; // 最新請求送去哪；idle 時為 null
   dropped: boolean;
   cum_reward: number;
   cost: number;
@@ -25,12 +26,13 @@ export interface Measured {
 }
 
 export interface Snapshot {
-  t: number;
+  mode: Mode;
+  n_total: number;
+  progress: number;
   w: [number, number];
   peak: boolean;
   note: string;
   measured: Measured | null;
-  episode_over: boolean;
   ai_loaded: boolean;
   lead_pct: number;
   ai_utils: Utils;
@@ -40,6 +42,6 @@ export interface Snapshot {
 }
 
 export type Command =
+  | { cmd: "run"; n: number; peak: boolean }
   | { cmd: "reset" }
-  | { cmd: "peak"; on: boolean }
   | { cmd: "policy"; text: string };

@@ -75,3 +75,23 @@ def generate_episode(rng: np.random.Generator, config: dict[str, Any]) -> list[A
         it, ot = _sample_tokens(rng, tok)
         arrivals.append(Arrival(t_ms=0.0, input_tokens=it, output_tokens=ot))
     return arrivals
+
+
+def generate_n(rng: np.random.Generator, config: dict[str, Any], n: int) -> list[Arrival]:
+    """產生剛好 ``n`` 個到達（供「跑固定筆數」模式）；延續卜瓦松過程、含中段尖峰形狀。"""
+    wl = config["workload"]
+    base = float(wl["arrival_rate_base"])
+    peak_amp = float(wl.get("peak_amplitude", 3.0))
+    duration_ms = float(wl["episode_seconds"]) * 1000.0
+    tok = wl["tokens"]
+
+    max_rate = base * (1.0 + peak_amp)
+    arrivals: list[Arrival] = []
+    t = 0.0
+    while len(arrivals) < max(1, n):
+        t += float(rng.exponential(1000.0 / max_rate))
+        rate = _rate_per_s(min(t, duration_ms), duration_ms, base, peak_amp)
+        if rng.random() <= rate / max_rate:
+            it, ot = _sample_tokens(rng, tok)
+            arrivals.append(Arrival(t_ms=t, input_tokens=it, output_tokens=ot))
+    return arrivals

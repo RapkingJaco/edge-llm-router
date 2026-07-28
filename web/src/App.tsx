@@ -3,10 +3,11 @@ import { RouterSocket } from "./api";
 import { PolicyConsole } from "./components/PolicyConsole";
 import { RaceChart, type RacePoint } from "./components/RaceChart";
 import { RoutingDashboard } from "./components/RoutingDashboard";
-import { ScenarioControls } from "./components/ScenarioControls";
+import { RunControls } from "./components/RunControls";
+import { SummaryPanel } from "./components/SummaryPanel";
 import type { Command, Snapshot } from "./types";
 
-const MAX_POINTS = 300;
+const MAX_POINTS = 600;
 
 export default function App() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
@@ -19,7 +20,8 @@ export default function App() {
       (snap) => {
         setSnapshot(snap);
         setHistory((prev) => {
-          const base = snap.t <= 1 ? [] : prev; // 新的一局 → 清空重畫
+          if (snap.mode === "idle") return [];
+          const base = snap.progress <= 1 ? [] : prev; // 新的一輪從頭畫
           const next = [...base, { ai: snap.ai.cum_reward, base: snap.base.cum_reward }];
           return next.length > MAX_POINTS ? next.slice(-MAX_POINTS) : next;
         });
@@ -33,7 +35,7 @@ export default function App() {
 
   const send = (cmd: Command) => sockRef.current?.send(cmd);
   const w = snapshot?.w;
-  const peakOn = snapshot?.peak ?? false;
+  const mode = snapshot?.mode ?? "idle";
 
   return (
     <div className="app">
@@ -49,14 +51,24 @@ export default function App() {
         </div>
       </header>
 
-      <ScenarioControls
-        peakOn={peakOn}
-        onPeak={(on) => send({ cmd: "peak", on })}
-        onReset={() => {
-          send({ cmd: "reset" });
+      <RunControls
+        mode={mode}
+        progress={snapshot?.progress ?? 0}
+        nTotal={snapshot?.n_total ?? 0}
+        onRun={(n, peak) => {
           setHistory([]);
+          send({ cmd: "run", n, peak });
+        }}
+        onReset={() => {
+          setHistory([]);
+          send({ cmd: "reset" });
         }}
       />
+
+      {mode === "idle" && (
+        <p className="hint">選一個請求數、按 <b>▶ 開始</b>，AI 會逐請求分流跑到底，最後給你統計。</p>
+      )}
+      {mode === "finished" && snapshot && <SummaryPanel snapshot={snapshot} />}
 
       <main className="grid">
         <RoutingDashboard snapshot={snapshot} />

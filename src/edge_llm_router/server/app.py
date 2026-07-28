@@ -49,10 +49,10 @@ def _probe_ai() -> tuple[Any, bool]:
 
 def _handle_command(sim: LiveSimulation, msg: dict[str, Any]) -> None:
     cmd = msg.get("cmd")
-    if cmd == "reset":
+    if cmd == "run":
+        sim.start_run(int(msg.get("n", 200)), bool(msg.get("peak", False)))
+    elif cmd == "reset":
         sim.reset()
-    elif cmd == "peak":
-        sim.set_peak(bool(msg.get("on", True)))
     elif cmd == "policy":
         sim.set_policy(str(msg.get("text", "")))
 
@@ -76,8 +76,12 @@ async def ws(websocket: WebSocket) -> None:
                 pass
 
             tick += 1
-            # 每 SAMPLE_EVERY 步，在背景執行緒真打一次後端（edge/cloud 輪流），不阻塞迴圈
-            if tick % SAMPLE_EVERY == 0 and (sample_task is None or sample_task.done()):
+            # 跑的時候每 SAMPLE_EVERY 步在背景真打一次後端（edge/cloud 輪流），不阻塞迴圈
+            if (
+                sim.mode == "running"
+                and tick % SAMPLE_EVERY == 0
+                and (sample_task is None or sample_task.done())
+            ):
                 node = "edge" if (tick // SAMPLE_EVERY) % 2 == 0 else "cloud"
                 sample_task = asyncio.create_task(asyncio.to_thread(sim.real_sample, node))
 

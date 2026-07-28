@@ -1,7 +1,7 @@
 """即時模擬：兩條環境並行跑同一請求流，一條用 PPO（AI）、一條用基準線（對照）。
 
-逐 tick 推進一個請求，累積雙方指標，產生給前端渲染的快照。同 seed → 兩條看到完全相同
-的到達序列，比較才公平。episode 跑完自動換下一局（連續 demo）。
+**可控模式**：一開始靜止（idle）；`start_run(n)` 跑固定 n 筆請求、跑到底自動停（finished）；
+`reset()` 回到靜止。同 seed → 兩條看到完全相同的到達序列，比較才公平。
 """
 
 from __future__ import annotations
@@ -29,12 +29,15 @@ def load_ai_policy() -> tuple[Policy, bool]:
         return GreedyPolicy(), False
 
 
-def _new_lane() -> dict[str, float]:
-    return {"cum_reward": 0.0, "cost": 0.0, "served": 0.0, "drops": 0.0, "sum_ttft": 0.0}
+def _new_lane() -> dict[str, Any]:
+    return {
+        "cum_reward": 0.0, "cost": 0.0, "served": 0.0, "drops": 0.0, "sum_ttft": 0.0,
+        "last_node": None, "last_dropped": False,
+    }
 
 
 class LiveSimulation:
-    """驅動 AI vs 基準線的即時對照。"""
+    """驅動 AI vs 基準線的可控對照（idle → running → finished）。"""
 
     def __init__(
         self,
@@ -49,34 +52,41 @@ class LiveSimulation:
         self.w = w
         self.ai_policy, self.ai_loaded = load_ai_policy()
         self.base_policy = base_policy if base_policy is not None else GreedyPolicy()
-        # 控制層 lazy build（provider=ollama 需探測，延到第一次下方針才做，不拖慢連線）
         self._control_override = control
         self._control: ControlLLM | None = None
         self._note = ""
-        # 抽驗：真實後端（lazy build，第一次抽驗才探測）+ 最近一次實測結果
         self._real: dict[str, NodeBackend] = {}
         self._last_sample: dict[str, Any] | None = None
         self._peak_factor = peak_factor
         self._peak = False
         self._seed = seed
 
+        self.mode = "idle"  # idle | running | finished
+        self._n_total = 0
+
         self.ai_env = RouterEnv(config=self._effective_config(), fixed_w=w)
         self.base_env = RouterEnv(config=self._effective_config(), fixed_w=w)
         self._new_episode(seed)
 
     # ── 對外 ────────────────────────────────────────────────────────
-    def reset(self, seed: int | None = None) -> None:
-        self._new_episode(seed if seed is not None else self._seed + 1)
+    def start_run(self, n_requests: int, peak: bool = False) -> None:
+        """開始一段固定筆數的模擬（跑到底自動停）。"""
+        self._peak = peak
+        n = max(1, min(int(n_requests), 5000))
+        self.ai_env.set_n_requests(n)
+        self.base_env.set_n_requests(n)
+        self._new_episode(self._seed + 1)
+        self._n_total = len(self.ai_env._arrivals)
+        self.mode = "running"
 
-    def set_peak(self, on: bool) -> None:
-        """尖峰模式：拉高到達率製造壅塞，立即換一局生效。"""
-        self._peak = on
+    def reset(self) -> None:
+        """回到靜止（idle）。"""
+        self._peak = False
+        self.ai_env.set_n_requests(None)
+        self.base_env.set_n_requests(None)
         self._new_episode(self._seed)
-
-    def _get_control(self) -> ControlLLM:
-        if self._control is None:
-            self._control = self._control_override or build_control(self._base_config)
-        return self._control
+        self._n_total = 0
+        self.mode = "idle"
 
     def set_policy(self, text: str) -> str:
         """中文方針 → 權重，即時套用（不重訓、不換局）。回傳解讀字串。"""
@@ -86,13 +96,6 @@ class LiveSimulation:
         self.base_env.set_w(*result.w)  # 基準線無視 w，套了也不影響
         self._note = result.note
         return result.note
-
-    def _real_backend(self, node_name: str) -> NodeBackend:
-        """lazy 建真實後端：edge→Ollama、cloud→Gemini(降級鏈)；建一次快取。"""
-        if node_name not in self._real:
-            builder = build_edge_backend if node_name == "edge" else build_cloud_backend
-            self._real[node_name] = builder(self._base_config)
-        return self._real[node_name]
 
     def real_sample(self, node_name: str = "edge") -> dict[str, Any]:
         """對真實後端抽打一次、量真實 TTFT（會阻塞數秒，應在背景執行緒跑）。"""
@@ -109,9 +112,9 @@ class LiveSimulation:
         return self._last_sample
 
     def tick(self) -> dict[str, Any]:
-        if self._done:
-            self._new_episode(self._seed + 1)
-
+        """running 才前進一個請求；跑完 n 筆自動停（finished）。其他模式回目前狀態快照。"""
+        if self.mode != "running":
+            return self._snapshot()
         a_action = self.ai_policy.predict(self._ai_obs)
         b_action = self.base_policy.predict(self._base_obs)
         self._ai_obs, a_r, _, a_trunc, a_info = self.ai_env.step(a_action)
@@ -119,8 +122,9 @@ class LiveSimulation:
         self._t += 1
         self._accumulate(self._ai, a_r, a_info)
         self._accumulate(self._base, b_r, b_info)
-        self._done = a_trunc or b_trunc
-        return self._snapshot(a_info, b_info)
+        if a_trunc or b_trunc:
+            self.mode = "finished"
+        return self._snapshot()
 
     # ── 內部 ────────────────────────────────────────────────────────
     def _effective_config(self) -> dict[str, Any]:
@@ -128,6 +132,18 @@ class LiveSimulation:
         if self._peak:
             cfg["workload"]["arrival_rate_base"] *= self._peak_factor
         return cfg
+
+    def _get_control(self) -> ControlLLM:
+        if self._control is None:
+            self._control = self._control_override or build_control(self._base_config)
+        return self._control
+
+    def _real_backend(self, node_name: str) -> NodeBackend:
+        """lazy 建真實後端：edge→Ollama、cloud→Gemini(降級鏈)；建一次快取。"""
+        if node_name not in self._real:
+            builder = build_edge_backend if node_name == "edge" else build_cloud_backend
+            self._real[node_name] = builder(self._base_config)
+        return self._real[node_name]
 
     def _new_episode(self, seed: int) -> None:
         self._seed = seed
@@ -141,24 +157,25 @@ class LiveSimulation:
         self._ai = _new_lane()
         self._base = _new_lane()
         self._t = 0
-        self._done = False
 
     @staticmethod
-    def _accumulate(lane: dict[str, float], reward: float, info: dict[str, Any]) -> None:
+    def _accumulate(lane: dict[str, Any], reward: float, info: dict[str, Any]) -> None:
         lane["cum_reward"] += reward
         lane["cost"] += info["cost"]
+        lane["last_node"] = info["node"]
+        lane["last_dropped"] = info["dropped"]
         if info["dropped"]:
             lane["drops"] += 1.0
         else:
             lane["served"] += 1.0
             lane["sum_ttft"] += info["ttft_ms"]
 
-    def _lane_view(self, lane: dict[str, float], name: str, info: dict[str, Any]) -> dict[str, Any]:
+    def _lane_view(self, lane: dict[str, Any], name: str) -> dict[str, Any]:
         served = lane["served"]
         return {
             "name": name,
-            "node": info["node"],
-            "dropped": info["dropped"],
+            "node": lane["last_node"],
+            "dropped": lane["last_dropped"],
             "cum_reward": round(lane["cum_reward"], 1),
             "cost": round(lane["cost"], 3),
             "served": int(served),
@@ -166,20 +183,21 @@ class LiveSimulation:
             "avg_ttft_ms": round(lane["sum_ttft"] / served, 0) if served else 0.0,
         }
 
-    def _snapshot(self, a_info: dict[str, Any], b_info: dict[str, Any]) -> dict[str, Any]:
+    def _snapshot(self) -> dict[str, Any]:
         ai_r, base_r = self._ai["cum_reward"], self._base["cum_reward"]
         lead = (ai_r - base_r) / abs(base_r) * 100.0 if abs(base_r) > 1e-6 else 0.0
         return {
-            "t": self._t,
+            "mode": self.mode,
+            "n_total": self._n_total,
+            "progress": int(self._ai["served"] + self._ai["drops"]),
             "w": [round(self.w[0], 2), round(self.w[1], 2)],
             "peak": self._peak,
             "note": self._note,
             "measured": self._last_sample,
-            "episode_over": self._done,
             "ai_loaded": self.ai_loaded,
             "lead_pct": round(lead, 1),
             "ai_utils": {k: round(v, 2) for k, v in self.ai_env.peek_utilizations().items()},
             "base_utils": {k: round(v, 2) for k, v in self.base_env.peek_utilizations().items()},
-            "ai": self._lane_view(self._ai, "PPO", a_info),
-            "base": self._lane_view(self._base, self.base_policy.name, b_info),
+            "ai": self._lane_view(self._ai, "PPO"),
+            "base": self._lane_view(self._base, self.base_policy.name),
         }
