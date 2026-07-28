@@ -29,6 +29,12 @@ def load_ai_policy() -> tuple[Policy, bool]:
         return GreedyPolicy(), False
 
 
+def _minmax(vals: list[float]) -> list[float]:
+    """把一組數值正規化到 [0,1]（min→0, max→1）；全相等回全 0。"""
+    lo, hi = min(vals), max(vals)
+    return [(v - lo) / (hi - lo) if hi > lo else 0.0 for v in vals]
+
+
 def _new_lane() -> dict[str, Any]:
     return {
         "cum_reward": 0.0, "cost": 0.0, "served": 0.0, "drops": 0.0, "sum_ttft": 0.0,
@@ -110,6 +116,7 @@ class LiveSimulation:
 
         # 各節點空載預測：首字延遲(TTFT)=rtt+prefill(輸入)；完整回應再加 decode(輸出)。
         per_node: dict[str, dict[str, float]] = {}
+        totals, costs = [], []
         for name, nc in self._base_config["nodes"].items():
             ttft = nc["rtt_ms"] + nc["prefill_ms_per_token"] * input_tokens
             total = ttft + nc["decode_ms_per_token"] * output_est
@@ -118,16 +125,23 @@ class LiveSimulation:
                 "total_ms": round(total, 0),
                 "cost": round(nc["cost_per_request"], 4),
             }
+            totals.append(total)
+            costs.append(nc["cost_per_request"])
 
-        action = self.ai_policy.predict(self.ai_env.observe_query(input_tokens, output_est))
-        total = input_tokens + output_est
-        complexity = "簡單" if total < 80 else ("中等" if total < 260 else "複雜")
+        # 依當前優化目標 w，平衡「完整回應」與「成本」挑最划算的節點（透明、可對照表格驗證）。
+        w_lat, w_cost = self.w
+        nt, nco = _minmax(totals), _minmax(costs)
+        scores = [w_lat * nt[i] + w_cost * nco[i] for i in range(len(NODE_ORDER))]
+        best = min(range(len(scores)), key=lambda i: scores[i])
+
+        est_total = input_tokens + output_est
+        complexity = "簡單" if est_total < 80 else ("中等" if est_total < 260 else "複雜")
         self._last_classify = {
             "text": t[:40],
             "input_tokens": input_tokens,
             "output_est": output_est,
             "complexity": complexity,
-            "node": NODE_ORDER[int(action)],
+            "node": NODE_ORDER[best],
             "per_node": per_node,
         }
         return self._last_classify

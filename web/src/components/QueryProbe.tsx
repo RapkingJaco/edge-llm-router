@@ -45,9 +45,10 @@ export function QueryProbe({ snapshot, send }: {
         />
         <button type="submit">試算</button>
       </form>
+      <p className="chips-hint">點範例把它帶進輸入框，再按「試算」：</p>
       <div className="examples">
         {EXAMPLES.map((ex) => (
-          <button key={ex} className="chip" type="button" onClick={() => { setText(ex); submit(ex); }}>
+          <button key={ex} className="chip" type="button" onClick={() => setText(ex)}>
             {ex}
           </button>
         ))}
@@ -69,15 +70,15 @@ export function QueryProbe({ snapshot, send }: {
                   <td>{Math.round(r.per_node[k].ttft_ms)} ms</td>
                   <td>{Math.round(r.per_node[k].total_ms)} ms</td>
                   <td>{r.per_node[k].cost.toFixed(4)}</td>
-                  <td>{k === r.node ? "★ AI 選" : ""}</td>
+                  <td>{k === r.node ? "★ AI Agent 選" : ""}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           <p className="classify-hint">
-            空載預測。<b>首字 TTFT</b>＝網路 + 讀輸入（看輸入長度）；<b>完整回應</b>再加輸出生成
-            （看輸出長度）→ 長輸出時雲端 decode 快才划算。AI Agent 優化「首字延遲 + 成本」，
-            依當下負載挑一個。
+            空載預測。<b>首字 TTFT</b>＝網路 + 讀輸入；<b>完整回應</b>再加輸出生成（長輸出時雲端
+            decode 快才划算）。AI Agent 依你目前的<b>優化目標</b>平衡「回應時間 vs 成本」挑最划算的
+            ——<b>改上面的優化目標</b>（省 → local、快 → cloud）會換節點；各半時 edge 最全能。
           </p>
         </div>
       )}
