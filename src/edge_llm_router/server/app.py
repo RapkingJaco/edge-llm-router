@@ -67,7 +67,11 @@ async def ws(websocket: WebSocket) -> None:
         while True:
             try:
                 msg = await asyncio.wait_for(websocket.receive_json(), timeout=TICK_INTERVAL)
-                _handle_command(sim, msg)
+                if msg.get("cmd") == "policy":
+                    # 控制層可能是真 LLM（llama3.2，數秒）→ 丟背景執行緒，別卡住迴圈
+                    await asyncio.to_thread(sim.set_policy, str(msg.get("text", "")))
+                else:
+                    _handle_command(sim, msg)
             except TimeoutError:
                 pass
 

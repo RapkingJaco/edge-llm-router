@@ -17,7 +17,7 @@ from ..backends.gemini_backend import build_cloud_backend
 from ..backends.ollama_backend import build_edge_backend
 from ..config import load_config
 from ..control.base import ControlLLM
-from ..control.rule_based import RuleBasedControl
+from ..control.ollama_control import build_control
 from ..sim.env import RouterEnv
 
 
@@ -49,7 +49,9 @@ class LiveSimulation:
         self.w = w
         self.ai_policy, self.ai_loaded = load_ai_policy()
         self.base_policy = base_policy if base_policy is not None else GreedyPolicy()
-        self.control = control if control is not None else RuleBasedControl()
+        # 控制層 lazy build（provider=ollama 需探測，延到第一次下方針才做，不拖慢連線）
+        self._control_override = control
+        self._control: ControlLLM | None = None
         self._note = ""
         # 抽驗：真實後端（lazy build，第一次抽驗才探測）+ 最近一次實測結果
         self._real: dict[str, NodeBackend] = {}
@@ -71,9 +73,14 @@ class LiveSimulation:
         self._peak = on
         self._new_episode(self._seed)
 
+    def _get_control(self) -> ControlLLM:
+        if self._control is None:
+            self._control = self._control_override or build_control(self._base_config)
+        return self._control
+
     def set_policy(self, text: str) -> str:
         """中文方針 → 權重，即時套用（不重訓、不換局）。回傳解讀字串。"""
-        result = self.control.parse(text, self.w)
+        result = self._get_control().parse(text, self.w)
         self.w = result.w
         self.ai_env.set_w(*result.w)
         self.base_env.set_w(*result.w)  # 基準線無視 w，套了也不影響

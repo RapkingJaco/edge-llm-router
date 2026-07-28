@@ -2,6 +2,7 @@
 
 from fastapi.testclient import TestClient
 
+from edge_llm_router.control.rule_based import RuleBasedControl
 from edge_llm_router.server.app import app
 from edge_llm_router.server.simulation import LiveSimulation
 
@@ -47,7 +48,8 @@ def test_websocket_streams_snapshots() -> None:
 
 
 def test_set_policy_changes_w_live() -> None:
-    sim = LiveSimulation()
+    # 用規則版控制層保持測試確定性（不依賴 llama3.2）。
+    sim = LiveSimulation(control=RuleBasedControl())
     sim.set_policy("成本太高，多用本機")
     assert sim.w[1] > sim.w[0]  # 偏成本
     snap = sim.tick()
