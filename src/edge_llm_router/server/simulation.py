@@ -99,10 +99,26 @@ class LiveSimulation:
         return result.note
 
     def classify_request(self, text: str) -> dict[str, Any]:
-        """試打一句請求：估 token 大小 → 用當前狀態問 AI Agent 會送去哪個節點（不推進模擬）。"""
+        """試打一句請求：估 token 大小 → 算各節點空載時的 TTFT/成本 → AI Agent 會選哪個。
+
+        per_node 用全新 idle 節點算（無排隊），呈現「這句在各節點多快多貴」的純粹比較，
+        方便直觀驗證 AI 的選擇；不推進主模擬、不影響 AI 行為。
+        """
         t = text.strip()
         input_tokens = max(1, min(512, len(t)))  # 用字數當 token 大小的粗估
         output_est = int(min(512, 16 + len(t) * 20))
+
+        # 各節點空載預測：首字延遲(TTFT)=rtt+prefill(輸入)；完整回應再加 decode(輸出)。
+        per_node: dict[str, dict[str, float]] = {}
+        for name, nc in self._base_config["nodes"].items():
+            ttft = nc["rtt_ms"] + nc["prefill_ms_per_token"] * input_tokens
+            total = ttft + nc["decode_ms_per_token"] * output_est
+            per_node[name] = {
+                "ttft_ms": round(ttft, 0),
+                "total_ms": round(total, 0),
+                "cost": round(nc["cost_per_request"], 4),
+            }
+
         action = self.ai_policy.predict(self.ai_env.observe_query(input_tokens, output_est))
         total = input_tokens + output_est
         complexity = "簡單" if total < 80 else ("中等" if total < 260 else "複雜")
@@ -112,6 +128,7 @@ class LiveSimulation:
             "output_est": output_est,
             "complexity": complexity,
             "node": NODE_ORDER[int(action)],
+            "per_node": per_node,
         }
         return self._last_classify
 

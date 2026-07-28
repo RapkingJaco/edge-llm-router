@@ -31,6 +31,7 @@ export interface Classified {
   output_est: number;
   complexity: string;
   node: NodeName;
+  per_node: Record<NodeName, { ttft_ms: number; total_ms: number; cost: number }>;
 }
 
 export interface Snapshot {

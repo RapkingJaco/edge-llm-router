@@ -168,8 +168,15 @@ body {
 }
 .classify-line { font-size: 14px; margin-bottom: 6px; }
 .classify-meta { color: var(--muted); font-size: 13px; }
-.classify-route { font-size: 15px; margin-top: 8px; }
-.classify b { font-weight: 500; }
+.classify b { font-weight: 500; color: var(--text); }
 .route-local { color: var(--local); }
 .route-edge { color: var(--edge); }
 .route-cloud { color: var(--cloud); }
+.classify-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+.classify-table th, .classify-table td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--border); }
+.classify-table th:first-child, .classify-table td:first-child { text-align: left; }
+.classify-table th { color: var(--muted); font-weight: 500; }
+.classify-table td { font-variant-numeric: tabular-nums; }
+.classify-table .picked { background: rgba(57, 135, 229, 0.14); }
+.classify-table .picked td:last-child { color: var(--ai); font-weight: 500; }
+.classify-hint { color: var(--muted); font-size: 12px; margin: 10px 0 0; line-height: 1.6; }

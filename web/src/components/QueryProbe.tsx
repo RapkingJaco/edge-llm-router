@@ -56,11 +56,29 @@ export function QueryProbe({ snapshot, send }: {
         <div className="classify">
           <div className="classify-line">「{r.text}」</div>
           <div className="classify-meta">
-            約 {r.input_tokens} tokens · 複雜度 <b>{r.complexity}</b>
+            估 <b>{r.input_tokens}</b> 輸入 tokens · 約 <b>{r.output_est}</b> 輸出 · 複雜度 <b>{r.complexity}</b>
           </div>
-          <div className="classify-route">
-            → AI Agent 調度到 <b className={`route-${r.node}`}>{NODE_LABEL[r.node]}</b>
-          </div>
+          <table className="classify-table">
+            <thead>
+              <tr><th>節點</th><th>首字 TTFT</th><th>完整回應</th><th>成本</th><th></th></tr>
+            </thead>
+            <tbody>
+              {(["local", "edge", "cloud"] as NodeName[]).map((k) => (
+                <tr key={k} className={k === r.node ? "picked" : ""}>
+                  <td className={`route-${k}`}>{NODE_LABEL[k]}</td>
+                  <td>{Math.round(r.per_node[k].ttft_ms)} ms</td>
+                  <td>{Math.round(r.per_node[k].total_ms)} ms</td>
+                  <td>{r.per_node[k].cost.toFixed(4)}</td>
+                  <td>{k === r.node ? "★ AI 選" : ""}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="classify-hint">
+            空載預測。<b>首字 TTFT</b>＝網路 + 讀輸入（看輸入長度）；<b>完整回應</b>再加輸出生成
+            （看輸出長度）→ 長輸出時雲端 decode 快才划算。AI Agent 優化「首字延遲 + 成本」，
+            依當下負載挑一個。
+          </p>
         </div>
       )}
     </section>
