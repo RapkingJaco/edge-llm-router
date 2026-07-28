@@ -37,6 +37,13 @@
 
 同一個 policy，只改中文 → 行為當場翻轉、AI 全程領先 ~25-32%。傳統策略不受影響。
 
+## 可插拔：OllamaControl（本機真 LLM，已做）✅
+
+規則版之外，`OllamaControl` 用本機 llama3.2（Ollama `format=json`）真的做意圖分類，
+few-shot 提示 + 溫度 0，失敗退規則版；`build_control(config)` 依 `control.provider` 切換
+（GCP 無 Ollama 自動退規則版）。詳見 [m7](m7-advanced.md)。這才是「LLM 把中文轉權重」的真
+LLM 版，而且全離線、免 Gemini 額度。
+
 ## 可插拔：真 Gemini（之後）
 
 `GeminiControl(ControlLLM)` 是可插拔選項：用 Gemini 免費層**結構化輸出**吐

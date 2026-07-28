@@ -42,6 +42,13 @@ gap 從 2286ms（placeholder 亂猜）→ 第一次擬合就崩到 72ms → 隨�
 🧠 **這證明什麼**：模擬不是憑感覺調的——拿真機量測回歸校準，gap 收斂到幾十 ms，代表
 「在模擬裡訓練的策略，數字可信」。這是 Sim-to-Real 的硬證據。
 
+## OllamaControl（全離線真 LLM 控制）✅
+- `control/ollama_control.py`：用本機 Ollama（llama3.2）+ `format=json` 逼吐
+  `{intent, magnitude}`，few-shot prompt（範例 8/8 正確），失敗自動退規則版。
+- `build_control(config)` 依 `control.provider` 選 ollama/rule；GCP 無 Ollama 自動退規則版。
+- server 把 policy 指令丟 `to_thread`（真 LLM 數秒不卡迴圈）。瀏覽器實測：🦙 Ollama 解讀、
+  w 當場變、不凍。**控制層不再只有規則版，是真的離線 LLM。**
+
 ## 未做（選配）
 - LSTM 消融：驗證「observation 已是充分統計量、記憶幫助有限」的對照實驗。
-- OllamaControl：控制層也走本機 Ollama，全離線敘事。
+- Domain Randomization：每 episode 在真值±範圍隨機化參數，訓練對「真實落差」更穩。
