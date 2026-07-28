@@ -19,7 +19,7 @@ import numpy as np
 from gymnasium import spaces
 
 from ..backends.base import Request
-from ..backends.simulated import build_nodes
+from ..backends.simulated import build_nodes, build_nodes_randomized
 from ..config import load_config
 from ..metrics import scalarize_reward
 from .workload import Arrival, generate_episode
@@ -54,6 +54,7 @@ class RouterEnv(gym.Env):
         super().__init__()
         self.config = config if config is not None else load_config()
         self.nodes = build_nodes(self.config)
+        self._dr_enabled = bool(self.config.get("domain_randomization", {}).get("enabled", False))
         self._fixed_w = fixed_w
 
         reward_cfg = self.config["reward"]
@@ -82,8 +83,13 @@ class RouterEnv(gym.Env):
         self, *, seed: int | None = None, options: dict[str, Any] | None = None
     ) -> tuple[np.ndarray, dict[str, Any]]:
         super().reset(seed=seed)
-        for node in self.nodes.values():
-            node.reset()
+        if self._dr_enabled:
+            # DR：每局重建節點、抽一組隨機參數；容量會變，重算 obs 正規化用的總容量。
+            self.nodes = build_nodes_randomized(self.config, self.np_random)
+            self._total_capacity = sum(n.capacity for n in self.nodes.values())
+        else:
+            for node in self.nodes.values():
+                node.reset()
         self._w = self._sample_w()
         self._arrivals = generate_episode(self.np_random, self.config)
         self._i = 0

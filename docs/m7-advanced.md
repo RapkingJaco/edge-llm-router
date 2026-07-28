@@ -49,6 +49,28 @@ gap 從 2286ms（placeholder 亂猜）→ 第一次擬合就崩到 72ms → 隨�
 - server 把 policy 指令丟 `to_thread`（真 LLM 數秒不卡迴圈）。瀏覽器實測：🦙 Ollama 解讀、
   w 當場變、不凍。**控制層不再只有規則版，是真的離線 LLM。**
 
+## Domain Randomization（Sim-to-Real 穩健化）✅
+
+**做了什麼**
+- `backends/simulated.py: build_nodes_randomized()`：每局在真值 ± 範圍隨機抖動節點參數
+  （prefill/decode ±30%、rtt ±20ms、容量 ±1）；`sim/env.py` reset 時若 DR 開就重建隨機節點。
+- `configs/default.yaml: domain_randomization.enabled`（預設關；訓練/demo 不變）。
+- `scripts/train_dr.py`：開 DR 訓一個策略 `ppo_wc_dr.pt`。
+- `eval/robustness.py`：把 DR / 非 DR 策略丟到「參數被偏移的世界」（模擬真實落差），
+  比 base→shifted 的 reward 掉幅，掃 mild/moderate/severe 三個強度。
+
+**結果（掉幅，越小越穩；`DR 少掉` = 非DR掉幅 − DR掉幅）**
+
+| 落差強度 | no-DR 掉幅 | with-DR 掉幅 | DR 少掉 |
+|---|---|---|---|
+| mild | 8.1 | 7.6 | +0.5 |
+| moderate | 34.8 | 33.7 | +1.1 |
+| severe | 54.3 | 53.6 | +0.7 |
+
+**誠實解讀**：DR **每個強度都更穩**（掉幅一致較小），但**幅度不大**。原因很有意思：
+observation 已經放了「**觀測到的**使用率/等待」——policy 是看**當下實際壅塞**在反應，不太
+依賴節點確切參數，所以**天生就有點抗參數變化**，DR 只在邊際再補強。這也正是為什麼
+**LSTM 大概也幫不上忙**（obs 已是充分統計量）。→ 面試點：有量測、懂「技術在哪有用/沒用」。
+
 ## 未做（選配）
-- LSTM 消融：驗證「observation 已是充分統計量、記憶幫助有限」的對照實驗。
-- Domain Randomization：每 episode 在真值±範圍隨機化參數，訓練對「真實落差」更穩。
+- LSTM 消融：驗證「observation 已是充分統計量、記憶幫助有限」的對照實驗（同上結論，可省）。

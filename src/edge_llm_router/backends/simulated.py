@@ -94,3 +94,29 @@ def build_nodes(config: dict[str, Any]) -> dict[str, SimulatedBackend]:
             drop_wait_ms=drop_wait_ms,
         )
     return nodes
+
+
+def build_nodes_randomized(config: dict[str, Any], rng: Any) -> dict[str, SimulatedBackend]:
+    """Domain Randomization：在真值 ± 範圍隨機抖動每個節點的參數（每 episode 抽一組）。
+
+    讓 agent 在「一整片可能的真實」裡訓練 → 對 sim-real 落差更穩。範圍取自
+    ``config['domain_randomization']``（prefill/decode 相對抖動、rtt 加抖動、容量 ±整數）。
+    成本是自訂標價、非物理量，不抖動。
+    """
+    dr = config.get("domain_randomization", {})
+    pj = float(dr.get("prefill_jitter", 0.30))
+    rj = float(dr.get("rtt_jitter_ms", 20.0))
+    cj = int(dr.get("capacity_jitter", 1))
+    drop_wait_ms = config.get("sim", {}).get("drop_wait_ms", 4000.0)
+    nodes: dict[str, SimulatedBackend] = {}
+    for name, nc in config["nodes"].items():
+        nodes[name] = SimulatedBackend(
+            name=name,
+            rtt_ms=max(0.0, nc["rtt_ms"] + float(rng.uniform(-rj, rj))),
+            prefill_ms_per_token=max(0.01, nc["prefill_ms_per_token"] * (1 + rng.uniform(-pj, pj))),
+            decode_ms_per_token=max(0.01, nc["decode_ms_per_token"] * (1 + rng.uniform(-pj, pj))),
+            capacity=max(1, nc["capacity"] + int(rng.integers(-cj, cj + 1))),
+            cost_per_request=nc["cost_per_request"],
+            drop_wait_ms=drop_wait_ms,
+        )
+    return nodes

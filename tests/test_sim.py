@@ -3,8 +3,38 @@
 import numpy as np
 from gymnasium.utils.env_checker import check_env
 
+from edge_llm_router.config import load_config
 from edge_llm_router.sim.env import OBS_DIM, RouterEnv
 from edge_llm_router.sim.workload import generate_episode
+
+
+def _dr_config() -> dict:
+    cfg = load_config()
+    cfg["domain_randomization"] = {
+        "enabled": True, "prefill_jitter": 0.3, "rtt_jitter_ms": 20, "capacity_jitter": 1,
+    }
+    return cfg
+
+
+def test_dr_off_is_stable() -> None:
+    env = RouterEnv()  # DR 預設關
+    env.reset(seed=1)
+    p1, c1 = env.nodes["edge"].prefill_ms_per_token, env.nodes["edge"].capacity
+    env.reset(seed=2)
+    assert env.nodes["edge"].prefill_ms_per_token == p1
+    assert env.nodes["edge"].capacity == c1
+
+
+def test_dr_on_varies_params() -> None:
+    env = RouterEnv(config=_dr_config())
+    env.reset(seed=1)
+    p1 = env.nodes["edge"].prefill_ms_per_token
+    env.reset(seed=2)
+    assert env.nodes["edge"].prefill_ms_per_token != p1  # 每局隨機化
+
+
+def test_dr_env_still_passes_check() -> None:
+    check_env(RouterEnv(config=_dr_config()), skip_render_check=True)
 
 
 def test_passes_gym_env_checker() -> None:
