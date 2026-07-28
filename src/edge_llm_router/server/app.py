@@ -53,6 +53,8 @@ def _handle_command(sim: LiveSimulation, msg: dict[str, Any]) -> None:
         sim.start_run(int(msg.get("n", 200)), bool(msg.get("peak", False)))
     elif cmd == "reset":
         sim.reset()
+    elif cmd == "classify":
+        sim.classify_request(str(msg.get("text", "")))
     elif cmd == "policy":
         sim.set_policy(str(msg.get("text", "")))
 

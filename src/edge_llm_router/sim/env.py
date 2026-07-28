@@ -197,6 +197,23 @@ class RouterEnv(gym.Env):
         """設定「跑固定筆數」；None 恢復時長制 episode。下次 reset 生效。"""
         self._n_requests = n
 
+    def observe_query(self, input_tokens: int, output_tokens_est: int) -> np.ndarray:
+        """對一個「假設請求」在當前節點狀態下算 observation（給『試打一個請求』用，不推進）。"""
+        now = self._last_now
+        vec: list[float] = [input_tokens / _TOKEN_NORM, output_tokens_est / _TOKEN_NORM]
+        busy_total = 0
+        for name in NODE_ORDER:
+            st = self.nodes[name].state(now)
+            busy_total += st.queue_len
+            vec.append(st.utilization)
+            vec.append(st.queue_len / self.nodes[name].capacity)
+            vec.append(st.est_wait_ms / self._drop_wait_ms)
+        vec.append(self._cum_cost / self._cost_budget)
+        vec.append(busy_total / self._total_capacity)
+        vec.append(self._w[0])
+        vec.append(self._w[1])
+        return np.clip(np.asarray(vec, dtype=np.float32), 0.0, 1.0)
+
     def peek_utilizations(self) -> dict[str, float]:
         """三節點在最近處理時點的使用率（給即時儀表板用；不影響訓練成本）。"""
         return {

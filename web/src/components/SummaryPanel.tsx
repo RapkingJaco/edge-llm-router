@@ -8,12 +8,12 @@ export function SummaryPanel({ snapshot }: { snapshot: Snapshot }) {
       <div className="summary-head">
         <h2>本次結果（{n_total} 筆請求）</h2>
         <span className={`summary-verdict ${aiWin ? "win" : "lose"}`}>
-          {aiWin ? `AI 贏 ▲ ${lead_pct.toFixed(1)}%` : `AI 落後 ${Math.abs(lead_pct).toFixed(1)}%`}
+          {aiWin ? `AI 提升 ▲ ${lead_pct.toFixed(1)}%` : `AI 落後 ${Math.abs(lead_pct).toFixed(1)}%`}
         </span>
       </div>
       <table className="summary-table">
         <thead>
-          <tr><th>指標</th><th>你的 AI (PPO)</th><th>傳統 (greedy)</th></tr>
+          <tr><th>指標</th><th>AI Agent</th><th>傳統排程</th></tr>
         </thead>
         <tbody>
           <tr><td>已處理</td><td>{ai.served}</td><td>{base.served}</td></tr>

@@ -25,6 +25,14 @@ export interface Measured {
   t: number;
 }
 
+export interface Classified {
+  text: string;
+  input_tokens: number;
+  output_est: number;
+  complexity: string;
+  node: NodeName;
+}
+
 export interface Snapshot {
   mode: Mode;
   n_total: number;
@@ -33,6 +41,7 @@ export interface Snapshot {
   peak: boolean;
   note: string;
   measured: Measured | null;
+  classify: Classified | null;
   ai_loaded: boolean;
   lead_pct: number;
   ai_utils: Utils;
@@ -44,4 +53,5 @@ export interface Snapshot {
 export type Command =
   | { cmd: "run"; n: number; peak: boolean }
   | { cmd: "reset" }
+  | { cmd: "classify"; text: string }
   | { cmd: "policy"; text: string };

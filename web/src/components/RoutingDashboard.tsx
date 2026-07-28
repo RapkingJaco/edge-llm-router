@@ -37,8 +37,8 @@ export function RoutingDashboard({ snapshot }: { snapshot: Snapshot | null }) {
   const current = snapshot?.ai.node;
   return (
     <section className="panel">
-      <h2>即時分流（AI）</h2>
-      <p className="panel-sub">PPO 逐請求決定丟哪個節點；滿載會塞爆丟棄。</p>
+      <h2>即時分流（AI Agent）</h2>
+      <p className="panel-sub">AI Agent 逐請求選擇執行節點（本機 / 邊緣 / 雲）。</p>
       <div className="nodes">
         {NODES.map((n) => (
           <NodeBar key={n.key} name={n.key} label={n.label} hint={n.hint}

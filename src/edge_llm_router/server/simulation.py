@@ -18,7 +18,7 @@ from ..backends.ollama_backend import build_edge_backend
 from ..config import load_config
 from ..control.base import ControlLLM
 from ..control.ollama_control import build_control
-from ..sim.env import RouterEnv
+from ..sim.env import NODE_ORDER, RouterEnv
 
 
 def load_ai_policy() -> tuple[Policy, bool]:
@@ -57,6 +57,7 @@ class LiveSimulation:
         self._note = ""
         self._real: dict[str, NodeBackend] = {}
         self._last_sample: dict[str, Any] | None = None
+        self._last_classify: dict[str, Any] | None = None
         self._peak_factor = peak_factor
         self._peak = False
         self._seed = seed
@@ -96,6 +97,23 @@ class LiveSimulation:
         self.base_env.set_w(*result.w)  # 基準線無視 w，套了也不影響
         self._note = result.note
         return result.note
+
+    def classify_request(self, text: str) -> dict[str, Any]:
+        """試打一句請求：估 token 大小 → 用當前狀態問 AI Agent 會送去哪個節點（不推進模擬）。"""
+        t = text.strip()
+        input_tokens = max(1, min(512, len(t)))  # 用字數當 token 大小的粗估
+        output_est = int(min(512, 16 + len(t) * 20))
+        action = self.ai_policy.predict(self.ai_env.observe_query(input_tokens, output_est))
+        total = input_tokens + output_est
+        complexity = "簡單" if total < 80 else ("中等" if total < 260 else "複雜")
+        self._last_classify = {
+            "text": t[:40],
+            "input_tokens": input_tokens,
+            "output_est": output_est,
+            "complexity": complexity,
+            "node": NODE_ORDER[int(action)],
+        }
+        return self._last_classify
 
     def real_sample(self, node_name: str = "edge") -> dict[str, Any]:
         """對真實後端抽打一次、量真實 TTFT（會阻塞數秒，應在背景執行緒跑）。"""
@@ -194,6 +212,7 @@ class LiveSimulation:
             "peak": self._peak,
             "note": self._note,
             "measured": self._last_sample,
+            "classify": self._last_classify,
             "ai_loaded": self.ai_loaded,
             "lead_pct": round(lead, 1),
             "ai_utils": {k: round(v, 2) for k, v in self.ai_env.peek_utilizations().items()},

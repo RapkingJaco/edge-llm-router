@@ -25,13 +25,13 @@ export function RaceChart({ history, snapshot }: { history: RacePoint[]; snapsho
 
   return (
     <section className="panel">
-      <h2>AI vs 傳統（賽跑）</h2>
-      <p className="panel-sub">累積 reward，越高＝越接近 0＝越好。藍＝你的 AI，灰＝傳統。</p>
+      <h2>AI Agent vs 傳統排程</h2>
+      <p className="panel-sub">累積 reward，越高＝越接近 0＝越好。藍＝AI Agent，灰＝傳統排程。</p>
       <div className="lead">
         <span className={`lead-num ${ahead ? "up" : "down"}`}>
           {ahead ? "▲" : "▼"} {Math.abs(lead).toFixed(1)}%
         </span>
-        <span className="lead-txt">{ahead ? "AI 領先" : "AI 落後"}</span>
+        <span className="lead-txt">{ahead ? "AI 提升" : "AI 落後"}</span>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} className="race" preserveAspectRatio="none" role="img"
         aria-label={`AI 相對傳統領先 ${lead.toFixed(1)}%`}>
@@ -40,8 +40,8 @@ export function RaceChart({ history, snapshot }: { history: RacePoint[]; snapsho
         <path d={line("ai")} className="line-ai" />
       </svg>
       <div className="race-legend">
-        <span><i className="sw sw-ai" />你的 AI（PPO）</span>
-        <span><i className="sw sw-base" />傳統（greedy）</span>
+        <span><i className="sw sw-ai" />AI Agent</span>
+        <span><i className="sw sw-base" />傳統排程</span>
         <span className="axis-note">上緣＝0（完美）</span>
       </div>
     </section>

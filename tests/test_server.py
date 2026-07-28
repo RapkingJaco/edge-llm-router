@@ -85,6 +85,15 @@ def test_websocket_run_reaches_finished() -> None:
         assert mode == "finished"
 
 
+def test_classify_request_returns_node() -> None:
+    sim = LiveSimulation()
+    r = sim.classify_request("幫我規劃今天的行程")
+    assert r["node"] in ("local", "edge", "cloud")
+    assert r["input_tokens"] >= 1
+    assert r["complexity"] in ("簡單", "中等", "複雜")
+    assert sim.tick()["classify"] is not None
+
+
 def test_health_endpoint() -> None:
     client = TestClient(app)
     r = client.get("/health")

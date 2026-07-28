@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { RouterSocket } from "./api";
 import { PolicyConsole } from "./components/PolicyConsole";
+import { QueryProbe } from "./components/QueryProbe";
 import { RaceChart, type RacePoint } from "./components/RaceChart";
 import { RoutingDashboard } from "./components/RoutingDashboard";
 import { RunControls } from "./components/RunControls";
@@ -75,6 +76,8 @@ export default function App() {
         <RaceChart history={history} snapshot={snapshot} />
         <PolicyConsole snapshot={snapshot} send={send} />
       </main>
+
+      <QueryProbe snapshot={snapshot} send={send} />
     </div>
   );
 }

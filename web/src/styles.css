@@ -85,7 +85,10 @@ body {
 .run { margin-bottom: 16px; }
 .run-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .run-label { color: var(--muted); font-size: 14px; }
-.chip-on { background: var(--ai); border-color: var(--ai); color: #fff; }
+.chip.chip-on {
+  background: var(--ai); border-color: var(--ai); color: #fff; font-weight: 500;
+  box-shadow: 0 0 0 2px rgba(57, 135, 229, 0.35);
+}
 .peak-toggle { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 4px; margin-left: 4px; }
 
 .progress { position: relative; height: 20px; background: var(--surface-2); border: 1px solid var(--border);
@@ -155,3 +158,18 @@ body {
   margin: 14px 0 0; padding: 10px 12px; background: var(--surface-2);
   border-left: 3px solid var(--ai); border-radius: 0 8px 8px 0; font-size: 13px; color: var(--text);
 }
+.chips-hint { color: var(--muted); font-size: 12px; margin: 4px 0 8px; }
+
+/* 試打一個請求 */
+.probe { margin-top: 16px; }
+.classify {
+  margin-top: 14px; padding: 12px 14px; background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 8px;
+}
+.classify-line { font-size: 14px; margin-bottom: 6px; }
+.classify-meta { color: var(--muted); font-size: 13px; }
+.classify-route { font-size: 15px; margin-top: 8px; }
+.classify b { font-weight: 500; }
+.route-local { color: var(--local); }
+.route-edge { color: var(--edge); }
+.route-cloud { color: var(--cloud); }
