@@ -46,7 +46,7 @@ LLM 版，而且全離線、免 Gemini 額度。
 
 ## 可插拔：真 Gemini（之後）
 
-`GeminiControl(ControlLLM)` 是可插拔選項：用 Gemini 免費層**結構化輸出**吐
+`GeminiControl(ControlLLM)` 是可插拔選項：用 Gemini（小額預付）**結構化輸出**吐
 `{intent, magnitude, note}`，同樣經 `intent_to_weights` + 安全網。放了 `GEMINI_API_KEY`
 再實作即可，介面不變（規則版永遠當 fallback）。SDK 選 `google-genai`（新）vs
 `google-generativeai`（舊）屆時定。

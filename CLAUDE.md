@@ -21,7 +21,8 @@ reward 權重，行為零重訓即時改變。
   PPO 小 MLP 用 CPU 即可。
 
 ## 鐵則
-- **0 元**：不接付費 API；LLM 走 Ollama / Gemini 免費層。
+- **成本節制**：預設優先用免費資源（本機 Ollama）；雲端 Gemini 走**小額預付**額度，
+  僅用於真打驗證 / 線上抽驗。避免無謂大額花費；實際加值一律由作者本人執行。
 - **設定集中**：可調參數放 `configs/default.yaml`，程式從 `config.load_config()` 讀，
   不要把數字散寫在程式裡。
 - **隱私**：`.env`（API key）不進版控。`_交接_繼續開發.md` 若轉 public 前需處理。

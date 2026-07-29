@@ -1,13 +1,15 @@
-"""GeminiBackend：真打 Gemini 免費層（雲端節點），量真實延遲。
+"""GeminiBackend：真打 Gemini（雲端節點），量真實首字延遲。
 
 可插拔、防禦性：沒有 `GEMINI_API_KEY` 或沒裝 SDK → `build_cloud_backend` 自動 fallback 回
-`SimulatedBackend`（和 Ollama 同套路）。成本一律「自己標價」（config 的 cloud 成本），不是
-Gemini 真花費（免費層 0 元）。
+`SimulatedBackend`（和 Ollama 同套路）。
 
-要啟用真 Gemini：
-1. `uv add google-genai`
-2. 在 `.env` 放 `GEMINI_API_KEY=...`
-本檔用 lazy import，SDK 缺席時完全不影響其他功能。
+成本兩層要分清楚：
+- RL 的 reward 成本一律「自己標價」（config 的 cloud 成本），**不是** Gemini 真花費。
+- 真打抽驗會產生**真實的小額費用**（`gemini-flash-latest` 為付費模型，走小額預付額度；
+  額度用盡即 429、自動降級，不會有意外帳單）。且只讀首字就 break，單次費用極小。
+
+啟用真 Gemini：`uv add google-genai` + `.env` 放 `GEMINI_API_KEY=...`（線上走 Secret Manager）。
+模型由 `configs/default.yaml` 的 `nodes.cloud.model` 指定。lazy import，SDK 缺席不影響其他功能。
 """
 
 from __future__ import annotations
@@ -86,9 +88,10 @@ def build_cloud_backend(config: dict[str, Any]) -> NodeBackend:
     有 key 才試 Gemini、Ollama 在線才加進鏈；只有模擬時直接回 SimulatedBackend。
     """
     cost = config["nodes"]["cloud"]["cost_per_request"]
+    model = config["nodes"]["cloud"].get("model", _DEFAULT_MODEL)
     chain: list[NodeBackend] = []
     if gemini_available():
-        chain.append(GeminiBackend(name="cloud", cost_per_request=cost))
+        chain.append(GeminiBackend(name="cloud", model=model, cost_per_request=cost))
 
     from .ollama_backend import OllamaBackend, ollama_available
 

@@ -108,7 +108,7 @@ edge-llm-router/
 
 📄 **文件庫工作法**：每做完一個 Phase，同步寫一份 `docs/mN-*.md`（做了什麼、為什麼這樣設計、踩到什麼坑、學到的觀念）；跨 Phase 的通用觀念沉澱到 `concepts.md`/`foundations.md`。這對「邊做邊教」風格是核心，也是面試時的深度證據。
 
-🖥 **前端要點**：`node_modules/`、`dist/` 一律 gitignore；三面板拆成 `RoutingDashboard`/`RaceChart`/`PolicyConsole` 各自單一職責；WebSocket client 抽成型別化的 `api.ts`（含重連）；明暗主題 + 無障礙 + 響應式；圖表用輕量方案（自繪 canvas 或單一小型圖表庫），守 0 元、少依賴。
+🖥 **前端要點**：`node_modules/`、`dist/` 一律 gitignore；三面板拆成 `RoutingDashboard`/`RaceChart`/`PolicyConsole` 各自單一職責；WebSocket client 抽成型別化的 `api.ts`（含重連）；明暗主題 + 無障礙 + 響應式；圖表用輕量方案（自繪 canvas 或單一小型圖表庫），守成本節制、少依賴。
 
 ---
 

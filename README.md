@@ -66,9 +66,9 @@ LLM serving / inference-routing 方向的互動作品集。三面板即時儀表
 
 ## 技術棧
 
-Python 3.12 · PyTorch（CPU）· **CleanRL PPO**（單檔、權重條件化）· Gymnasium · NumPy/SciPy · Ollama（4070 邊緣）· Gemini 免費層（雲端 + 控制層）· FastAPI + WebSocket · React + Vite + TypeScript · MLflow · Docker · GitHub Actions · uv
+Python 3.12 · PyTorch（CPU）· **CleanRL PPO**（單檔、權重條件化）· Gymnasium · NumPy/SciPy · Ollama（llama3.2；4070 邊緣節點 + 中文控制層）· Gemini（雲端節點，小額預付）· FastAPI + WebSocket · React + Vite + TypeScript · MLflow · Docker · GitHub Actions · uv
 
-**0 元鐵則**：全開源、不接付費 API；LLM 走本機 Ollama 或 Gemini 免費層。
+**成本節制**：預設全開源、免費——本機 Ollama 跑邊緣節點與中文控制層；雲端 Gemini 走**小額預付**額度，僅用於真打驗證 / 線上抽驗（額度用盡自動降級，不會有意外帳單）。
 
 ---
 
@@ -112,7 +112,7 @@ src/edge_llm_router/  backends/ sim/ agent/ control/ server/  + config.py metric
 web/                  React + Vite + TS 三面板
 eval/ calibration/    分析腳本（→ outputs/）
 docs/                 觀念檔 + 每階段里程碑筆記
-tests/                66 個測試
+tests/                79 個測試
 ```
 
 邊做邊寫的里程碑筆記（做了什麼、為什麼、踩什麼坑）：
@@ -123,4 +123,4 @@ tests/                66 個測試
 
 ## 品質
 
-`uv run pytest -q`（**66 passed**）· `uv run ruff check`（clean）· GitHub Actions CI（ruff + pytest + 環境檢查）。
+`uv run pytest -q`（**78 passed, 1 skipped**）· `uv run ruff check`（clean）· GitHub Actions CI（ruff + pytest + 環境檢查）。

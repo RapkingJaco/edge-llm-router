@@ -55,7 +55,7 @@
 - `tests/test_gemini_backend.py`：2 個（有 key 時 fallback 測試自動 skip）。
 
 **真呼叫驗證（放了 `GEMINI_API_KEY` 後）**
-- `probe_gemini.py` 真打 3 次成功，實測 TTFT **~3300ms**（含網路 RTT + 免費層），成本標價 0.01。
+- `probe_gemini.py` 真打 3 次成功，實測 TTFT **~3300ms**（含網路 RTT；當時走免費試用金），成本標價 0.01。
 - **型號雷**：`gemini-1.5-flash` 對此 key 回 404、`gemini-2.0-flash` 連打易 429（免費層 RPM 低）；
   改用 **`gemini-flash-latest`** OK。預設已設為它。
 - **安全**：`.env` 已 gitignore；key 請勿貼整行 `echo`（會把指令文字寫進檔）。
@@ -68,6 +68,14 @@
   抽驗/探測永不卡在 Google 額度。
 - 實測：Gemini 429（prepay credits 用盡）→ 自動退 Ollama → 仍量到真 TTFT ~2.5s。
 - 註：Gemini 額度是 Google 端狀態、非程式問題；用光也不影響 demo（demo 走模擬）。
+
+**更新（2026-07，改用小額預付）**
+- 原本靠 Gemini **免費試用金**真打；試用金耗盡後持續 429（`prepayment credits depleted`），
+  且此帳號免費層 `generate_content_free_tier_requests` 為 **limit 0**（不給免費量）。
+- 作者改為在 Gemini 專案儲值**小額預付**（NT$400 起）；`gemini-flash-latest` 恢復真打。
+- **線上（GCP）雲端節點抽驗已實測到真 Gemini**（key 走 Secret Manager 掛入、非明碼；
+  Cloud Run 服務帳號授權讀取）。
+- 仍維持優雅降級：預付用盡 → 429 → 自動退備胎；預付有天花板，不會有意外帳單。
 
 ## P6-4 — Docker（本機 build 驗證）✅
 

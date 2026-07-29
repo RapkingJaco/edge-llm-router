@@ -24,7 +24,8 @@ nodes:
     prefill_ms_per_token: 0.4
     decode_ms_per_token: 3.0
     capacity: 16
-    cost_per_request: 0.0100
+    cost_per_request: 0.0100    # RL 用的標價（非 Gemini 真花費）
+    model: gemini-flash-latest  # 真打抽驗用；付費模型走小額預付（免費層 limit 0 打不動）
 
 # ── Reward：r = -(w_lat·normTTFT + w_cost·normCost) - 逾時懲罰 ──────────
 reward:

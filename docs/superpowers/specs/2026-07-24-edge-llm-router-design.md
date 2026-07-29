@@ -47,11 +47,11 @@
 |---|---|---|---|---|---|
 | **本機 local（弱手機）** | 模擬（或超小 1B 模型），數字錨定公開 benchmark | 中，一擠就慢 | ≈0（電費） | 低 | ❌ 退模擬 |
 | **邊緣 edge** | 🟢 **作者 4070 桌機真跑 Ollama**（桌機物理上就是邊緣 GPU 盒） | 真實量測 | 我標的(小) | 中 | ❌ 無 GPU 退模擬 |
-| **雲端 cloud** | 🟢 **真 Gemini 免費層**（結構化串流） | 真實量測(含網路 RTT) | **我標的($X/次，明顯貴)** | 高 | ✅ 只要有網路+key |
+| **雲端 cloud** | 🟢 **真 Gemini（小額預付）**（結構化串流） | 真實量測(含網路 RTT) | **我標的($X/次，明顯貴)** | 高 | ✅ 只要有網路+key |
 
 **關鍵原則**
-- **成本一律「自己標價」**：Gemini 免費層實際 0 元，但我們假裝雲端很貴（比本機貴約 100× 量級），否則 RL 會學到「全丟雲端」。→ 延遲=真、成本=模擬標價。
-- **訓練/展示分離**：訓練 PPO 全用（校準過的）模擬（快、不打 API）；線上請求洪流大多走模擬（撐吞吐、守免費層額度）；**抽驗少量請求真打 Ollama/Gemini**，標「✅實測」秀在儀表板，同時當 Sim-to-Real 驗證儀。
+- **成本一律「自己標價」**：真打 Gemini 的實際費用極小（小額預付），但 RL 的成本一律用我們的標價、假裝雲端很貴（比本機貴約 100× 量級），否則 RL 會學到「全丟雲端」。→ 延遲=真、成本=模擬標價。
+- **訓練/展示分離**：訓練 PPO 全用（校準過的）模擬（快、不打 API）；線上請求洪流大多走模擬（撐吞吐、守預付額度 / 成本）；**抽驗少量請求真打 Ollama/Gemini**，標「✅實測」秀在儀表板，同時當 Sim-to-Real 驗證儀。
 - **可插拔後端**：`NodeBackend.infer(req)→InferResult`；`SimulatedBackend`/`OllamaBackend`/`GeminiBackend`；偵測不到 GPU/Ollama 自動 fallback。
 
 ---
@@ -112,7 +112,7 @@ r = -( w_lat · 正規化TTFT + w_cost · 正規化成本 ) - 懲罰(逾時/丟�
 ## 7. LLM 控制層
 
 - **角色**：只把「中文方針」翻成權重，不回答任何聊天。
-- **技術**：Gemini 免費層**結構化輸出 / function calling**——事先給 schema，逼它填 JSON。
+- **技術**：Gemini **結構化輸出 / function calling**——事先給 schema，逼它填 JSON。
   ```json
   { "latency_weight": 0~1, "cost_weight": 0~1, "note": "一句話解讀" }
   ```
@@ -170,7 +170,7 @@ web/(前端) ──WS──► server/(FastAPI) ──► control/(LLM 控制層
 
 ---
 
-## 11. 技術棧（0 元鐵則）
+## 11. 技術棧（成本節制）
 
 Python 3.11（含中文 `-X utf8`）、Gymnasium、NumPy、PyTorch、**CleanRL**（PPO 單檔，vendored）、httpx（async 串流量 TTFT）、Ollama（4070 邊緣）、google-generativeai（Gemini 雲端+控制層）、FastAPI + WebSocket、Docker、pytest、GitHub Actions、部署 GCP（參考作者 CV 專案流程）。
 
@@ -190,7 +190,7 @@ Python 3.11（含中文 `-X utf8`）、Gymnasium、NumPy、PyTorch、**CleanRL**
 
 ## 13. 鐵則 / 約束
 
-- 🚫 **成本 0 元**：全開源；不接付費 API；LLM 走本機 Ollama 或 Gemini 免費層。
+- 💰 **成本節制**（原為「0 元」，已鬆綁）：預設全開源、免費（本機 Ollama）；雲端 Gemini 走**小額預付**額度，僅用於真打驗證 / 線上抽驗，避免無謂大額花費。
 - 🔐 **隱私 / 公開前檢查**：repo 不得含論文封存量化數據、公司機密、個人/內部路徑。**交接檔 `_交接_給新對話.md` 屬私人工作文件，不進版控**（.gitignore）。API key 走 `.env`，不進版控。
 - 📄 本專案數字皆來自公開 benchmark 或自訂模擬，天然安全，不使用碩論量化結果。
 - 🧠 教學風格：白話+比喻+記憶鉤+邊做邊教；術語配真解釋、不硬翻怪詞。
