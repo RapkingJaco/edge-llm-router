@@ -1,7 +1,7 @@
 [project]
 name = "edge-llm-router"
 version = "0.1.0"
-description = "RL 智慧 LLM 推論分流器 — 互動展示平台"
+description = "AI Agent 智慧 LLM 推論分流器 — 互動展示平台"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [

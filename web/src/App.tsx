@@ -43,7 +43,7 @@ export default function App() {
       <header className="hero">
         <div>
           <h1>edge-llm-router</h1>
-          <p>RL 智慧 LLM 推論分流器 — AI 逐請求決定在 本機/邊緣/雲 哪裡跑，優化延遲 + 成本</p>
+          <p>AI Agent 智慧 LLM 推論分流器 — 逐請求決定在 本機/邊緣/雲 哪裡跑，優化延遲 + 成本</p>
         </div>
         <div className="status">
           <span className={`dot ${connected ? "on" : "off"}`} />
